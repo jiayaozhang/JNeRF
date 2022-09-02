@@ -86,10 +86,131 @@ python tools/run_net.py --config-file ./projects/ngp/configs/ngp_base.py --task 
 3.   python -m jittor_utils.install_cuda
 
 
-* <img src="docs/config.png" width="3600"/>
+* <img src="docs/config.png" width="2400"/>
  
 
  ## How to add the deformation module
 
 
- 
+ In NGP_Network, add these modules
+
+```
+        self.dir_encoder = build_from_cfg(self.cfg.encoder.dir_encoder, ENCODERS)
+
+        self.deform_encoder = FrequencyEncoder(input_dims=3, multires=10, log_sampling=True)
+
+        self.time_encoder = FrequencyEncoder(input_dims=1, multires=6, log_sampling=True)
+
+        self.sigma_encoder = HashEncoder(n_pos_dims=3, n_features_per_level=2,
+                                  n_levels=16, base_resolution=16, log2_hashmap_size=19)
+
+        self.dir_encoder = SHEncoder()
+```
+
+
+### New features
+
+        ## deform network
+```    
+        self.num_layers_deform = num_layers_deform = 5
+        hidden_dim_deform = 128
+        in_dim_time = 1
+        deform_net = []
+        for l in range(num_layers_deform):
+            if l == 0:
+                in_dim = self.deform_encoder.out_dim + self.time_encoder.out_dim # grid dim + time
+            else:
+                in_dim = hidden_dim_deform
+            
+            if l == num_layers_deform - 1:
+                out_dim = 3 # deformation for xyz
+            else:
+                out_dim = hidden_dim_deform
+            
+            deform_net.append(nn.Linear(in_dim, out_dim, bias=False))
+
+        self.deform_net = nn.ModuleList(deform_net)        
+```
+
+        ## sigma network
+```
+        self.num_layers = num_layers = 2
+        self.hidden_dim = hidden_dim = 64
+        self.geo_feat_dim = geo_feat_dim = 15
+
+        sigma_net = []
+        for l in range(num_layers):
+            if l == 0:
+                in_dim = self.sigma_encoder.out_dim + self.time_encoder.out_dim + self.deform_encoder.out_dim  # concat everything
+            else:
+                in_dim = hidden_dim
+
+            if l == num_layers - 1:
+                out_dim = 1 + self.geo_feat_dim  # 1 sigma + features for color
+            else:
+                out_dim = hidden_dim
+
+            sigma_net.append(nn.Linear(in_dim, out_dim, bias=False))
+
+        self.sigma_net = nn.ModuleList(sigma_net)
+```
+
+
+        #color network
+```        
+        self.num_layers_color = num_layers_color = 3
+        self.hidden_dim_color = hidden_dim_color = 64
+
+        color_net = []
+        for l in range(num_layers_color):
+            if l == 0:
+                in_dim = self.dir_encoder.out_dim + self.geo_feat_dim
+            else:
+                in_dim = hidden_dim
+
+            if l == num_layers_color - 1:
+                out_dim = 3  # 3 rgb
+            else:
+                out_dim = hidden_dim
+
+            color_net.append(nn.Linear(in_dim, out_dim, bias=False))
+
+        self.color_net = nn.ModuleList(color_net)
+```
+
+        #background network
+```       
+        num_layers_bg = 2
+        hidden_dim_bg = 64
+        if self.bg_radius > 0:
+            self.num_layers_bg = num_layers_bg
+            self.hidden_dim_bg = hidden_dim_bg
+
+            bg_net = []
+            for l in range(num_layers_bg):
+                if l == 0:
+                    in_dim = self.encoder_bg.output_mask + self.dir_encoder.out_dim
+                else:
+                    in_dim = hidden_dim_bg
+
+                if l == num_layers_bg - 1:
+                    out_dim = 3  # 3 rgb
+                else:
+                    out_dim = hidden_dim_bg
+
+                bg_net.append(nn.Linear(in_dim, out_dim, bias=False))
+
+            self.bg_net = nn.ModuleList(bg_net)
+        else:
+            self.bg_net = None
+```
+
+##Reference
+
+* I try to move the Dnerf from torch_ngp to Jnerf
+
+Which I would use for future use in the simualtion domain
+
+## Reference
+
+* https://github.com/ashawkey/torch-ngp
