@@ -79,6 +79,8 @@ python tools/run_net.py --config-file ./projects/ngp/configs/ngp_base.py --task 
 
 * Everytime when I encounter some errors I do the following in order, it will always work!
 
+in pycharm, remember to LD_LIBRARY_PATH=0 otherwise it would has errors
+
 1.   unset LD_LIBRARY_PATH
 
 2.   python -m jittor
