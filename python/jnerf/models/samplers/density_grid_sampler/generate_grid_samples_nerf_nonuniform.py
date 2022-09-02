@@ -21,7 +21,7 @@ class generate_grid_samples_nerf_nonuniform(Function):
         cuda_header=global_headers+self.density_grad_header+'#include "generate_grid_samples_nerf_nonuniform.h"', cuda_src=f"""
         @alias(density_grid_ema_step,in1)
         uint32_t n_elements=out0_shape0;
-        uint32_t max_cascade={self.max_cascade};
+        uint32_t max_cascade={2};
         float* density_grid=(float*)in0_p;
         cudaStream_t stream=0;
         NerfPosition* density_grid_positions=(NerfPosition*)out0_p;

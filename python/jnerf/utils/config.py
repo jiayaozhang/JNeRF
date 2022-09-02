@@ -160,4 +160,4 @@ def save_cfg(save_file):
 def print_cfg():
     data  =  yaml.dump(_cfg.dump())
     # TODO: data keys are not sorted
-    print(data) 
+    #print(data)

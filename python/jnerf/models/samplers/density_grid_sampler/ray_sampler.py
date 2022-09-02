@@ -32,7 +32,7 @@ class RaySampler(Function):
         rays_index = jt.empty((self.n_rays_per_batch, 1), 'int32')
         rays_numsteps = jt.empty((self.n_rays_per_batch, 2), 'int32')
         coords_out, rays_index, rays_numsteps,self.ray_numstep_counter = jt.code(
-            inputs=[rays_o, rays_d, density_grid_bitfield, metadata, imgs_id, xforms], outputs=[coords_out,rays_index,rays_numsteps,self.ray_numstep_counter], 
+            inputs=[rays_o, rays_d, density_grid_bitfield, metadata, imgs_id, xforms], outputs=[coords_out,rays_index,rays_numsteps,self.ray_numstep_counter],
             cuda_header=global_headers+self.density_grad_header+'#include "ray_sampler.h"',  cuda_src=f"""
      
         @alias(rays_o, in0)

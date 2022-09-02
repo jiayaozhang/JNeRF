@@ -133,7 +133,7 @@ class DensityGridSampler(nn.Module):
 
         self.measured_batch_size=jt.zeros([1],'int32')##rays batch sum
 
-    def sample(self, img_ids, rays_o, rays_d, rgb_target=None, is_training=False):
+    def sample(self, img_ids, rays_o, rays_d, time, rgb_target=None, is_training=False):
         if is_training:
             if self.cfg.m_training_step%self.update_den_freq==0:
                 self.update_density_grid()
@@ -143,6 +143,10 @@ class DensityGridSampler(nn.Module):
             metadata=self.dataset.metadata, imgs_id=img_ids, xforms=self.dataset.transforms_gpu)
         coords_pos = coords[...,  :3].detach()
         coords_dir = coords[..., 4: ].detach()
+
+        if coords_pos.shape[0] == 0:
+            return None, None
+
         if not is_training:
             self._coords = coords.detach()
             self._rays_numsteps = rays_numsteps.detach()
@@ -154,7 +158,7 @@ class DensityGridSampler(nn.Module):
                 coords_compacted,rays_numsteps_compacted,compacted_numstep_counter=self.compacted_coords(nerf_outputs,coords,rays_numsteps)
                 self.measured_batch_size+=compacted_numstep_counter
         else:
-            nerf_outputs = self.model(coords_pos, coords_dir).detach()
+            nerf_outputs = self.model(coords_pos, coords_dir, time).detach()
             coords_compacted,rays_numsteps_compacted,compacted_numstep_counter=self.compacted_coords(nerf_outputs,coords,rays_numsteps)
             self.measured_batch_size+=compacted_numstep_counter
         if is_training:
@@ -180,12 +184,11 @@ class DensityGridSampler(nn.Module):
             background_color = training_background_color
         assert network_outputs.shape[0]==self._coords.shape[0]
         if inference:
-            rgb, alpha = self.calc_rgb.inference(
+            return self.calc_rgb.inference(
                 network_outputs, 
                 self._coords, 
                 self._rays_numsteps,
                 self.density_grid_mean)
-            return rgb, alpha
         else:
             return self.calc_rgb(
                 network_outputs,
