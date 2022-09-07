@@ -112,6 +112,7 @@ class NerfDataset():
         self.idx_now=0
         self.load_data(root_dir)
         jt.gc()
+
         self.image_data = self.image_data.reshape(
             self.n_images, -1, 4).detach()
 
