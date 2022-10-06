@@ -310,6 +310,7 @@ class Runner():
             network_outputs = self.model(pos, dir, time)
             rgb = self.sampler.rays2rgb(network_outputs, inference=True)
             imgs[pixel:end] = rgb.numpy()
+            jt.gc()
         imgs = imgs[:H*W].reshape(H, W, 3)
         imgs_tar=jt.array(self.dataset[dataset_mode].image_data[img_id]).reshape(H, W, 4)
         imgs_tar = imgs_tar[..., :3] * imgs_tar[..., 3:] + jt.array(self.background_color) * (1 - imgs_tar[..., 3:])

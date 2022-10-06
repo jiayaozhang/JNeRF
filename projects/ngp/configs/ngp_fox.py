@@ -62,7 +62,7 @@ background_color = [0, 0, 0]
 hash_func = "p0 ^ p1 * 19349663 ^ p2 * 83492791"
 cone_angle_constant = 0.00390625
 near_distance = 0.2
-n_rays_per_batch = 4096
+n_rays_per_batch = 2048
 n_training_steps = 16
 # Expected number of sampling points per batch
 target_batch_size = 1<<18
@@ -70,4 +70,4 @@ target_batch_size = 1<<18
 # Set const_dt=False for faster convergence
 const_dt=False
 # Use fp16 for faster training
-fp16 = True
+fp16 = False

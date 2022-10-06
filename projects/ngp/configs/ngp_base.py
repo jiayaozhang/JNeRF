@@ -37,7 +37,7 @@ expdecay=dict(
 )
 dataset_type = 'NerfDataset'
 dataset_dir = 'data/jumpingjacks'
-n_rays_per_batch = 1024
+n_rays_per_batch = 1
 dataset = dict(
     train=dict(
         type=dataset_type,
@@ -68,11 +68,12 @@ tot_train_steps = 80000
 background_color = [0, 0, 0]
 # Hash encoding function used in Instant-NGP
 hash_func = "p0 ^ p1 * 19349663 ^ p2 * 83492791"
+# hash_func =
 cone_angle_constant = 0.00390625
 near_distance = 0.2
 n_training_steps = 16
 # Expected number of sampling points per batch
-target_batch_size = 1<<10
+target_batch_size = 1<<18
 # Set const_dt=True for higher performance
 # Set const_dt=False for faster convergence
 const_dt=True

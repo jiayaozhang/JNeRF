@@ -43,9 +43,9 @@ class FMLP(nn.Module):
 
 
 @NETWORKS.register_module()
-class NGPNetworks(nn.Module):
+class NGPNetworks_new(nn.Module):
     def __init__(self, use_fully=True, density_hidden_layer=1, density_n_neurons=64, rgb_hidden_layer=2, rgb_n_neurons=64):
-        super(NGPNetworks, self).__init__()
+        super(NGPNetworks_new, self).__init__()
         self.use_fully = use_fully
         self.cfg = get_cfg()
         self.using_fp16 = self.cfg.fp16
@@ -63,7 +63,7 @@ class NGPNetworks(nn.Module):
         self.sigma_encoder = HashEncoder(n_pos_dims=3, n_features_per_level=2,
                                   n_levels=16, base_resolution=16, log2_hashmap_size=19)
 
-        self.dir_encoder = SHEncoder()
+        # self.dir_encoder = SHEncoder()
 
         # much smaller hash grid
         self.encoder_bg = GridEncode(hash_func_header = "\"", n_pos_dims=2, n_levels=4, base_resolution=16, log2_hashmap_size=19)
@@ -302,36 +302,36 @@ class NGPNetworks(nn.Module):
 
         # allow masked inference
 
-    # def color(self, pos_input, dir_input, mask=None, geo_feat=None, **kwargs):
-    #     # x: [N, 3] in [-bound, bound]
-    #     # t: [1, 1], in [0, 1]
-    #     # mask: [N,], bool, indicates where we actually needs to compute rgb.
-    #
-    #     if mask is not None:
-    #         rgbs = jt.zeros(mask.shape[0], 3)  # [N, 3]
-    #         # in case of empty mask
-    #         if not mask.any():
-    #             return rgbs
-    #         pos_input = pos_input[mask]
-    #         dir_input = dir_input[mask]
-    #         geo_feat = geo_feat[mask]
-    #
-    #     dir_input = self.dir_encoder(dir_input)
-    #     h = jt.concat([dir_input, geo_feat], dim=-1)
-    #     for l in range(self.num_layers_color):
-    #         h = self.color_net[l](h)
-    #         if l != self.num_layers_color - 1:
-    #             h = jt.nn.relu(h)
-    #
-    #     # sigmoid activation for rgb
-    #     h = jt.sigmoid(h)
-    #
-    #     if mask is not None:
-    #         rgbs[mask] = h.to(rgbs.dtype)  # fp16 --> fp32
-    #     else:
-    #         rgbs = h
-    #
-    #     return rgbs
+    def color(self, pos_input, dir_input, mask=None, geo_feat=None, **kwargs):
+        # x: [N, 3] in [-bound, bound]
+        # t: [1, 1], in [0, 1]
+        # mask: [N,], bool, indicates where we actually needs to compute rgb.
+
+        if mask is not None:
+            rgbs = jt.zeros(mask.shape[0], 3)  # [N, 3]
+            # in case of empty mask
+            if not mask.any():
+                return rgbs
+            pos_input = pos_input[mask]
+            dir_input = dir_input[mask]
+            geo_feat = geo_feat[mask]
+
+        dir_input = self.dir_encoder(dir_input)
+        h = jt.concat([dir_input, geo_feat], dim=-1)
+        for l in range(self.num_layers_color):
+            h = self.color_net[l](h)
+            if l != self.num_layers_color - 1:
+                h = jt.nn.relu(h)
+
+        # sigmoid activation for rgb
+        h = jt.sigmoid(h)
+
+        if mask is not None:
+            rgbs[mask] = h.to(rgbs.dtype)  # fp16 --> fp32
+        else:
+            rgbs = h
+
+        return rgbs
 
 
 
@@ -345,61 +345,61 @@ class NGPNetworks(nn.Module):
             self.deform_encoder.float16()
 #
 #
-# @NETWORKS.register_module()
-# class NGPNetworks(nn.Module):
-#     def __init__(self, use_fully=True, density_hidden_layer=1, density_n_neurons=64, rgb_hidden_layer=2, rgb_n_neurons=64):
-#         super(NGPNetworks, self).__init__()
-#         self.use_fully = use_fully
-#         self.cfg = get_cfg()
-#         self.using_fp16 = self.cfg.fp16
-#         self.pos_encoder = build_from_cfg(self.cfg.encoder.pos_encoder, ENCODERS)
-#         self.dir_encoder = build_from_cfg(self.cfg.encoder.dir_encoder, ENCODERS)
-#
-#         if self.use_fully and jt.flags.cuda_archs[0] >= 75 and self.using_fp16:
-#             assert self.pos_encoder.out_dim%16==0
-#             assert self.dir_encoder.out_dim%16==0
-#             self.density_mlp = FMLP([self.pos_encoder.out_dim, density_n_neurons, 16])
-#             self.rgb_mlp = FMLP([self.dir_encoder.out_dim+16, rgb_n_neurons, rgb_n_neurons, 3])
-#         else:
-#             if self.use_fully and not (jt.flags.cuda_archs[0] >= 75):
-#                 print("Warning: Sm arch is lower than sm_75, FFMLPs is not supported. Automatically use original MLPs instead.")
-#             elif self.use_fully and not self.using_fp16:
-#                 print("Warning: FFMLPs only support float16. Automatically use original MLPs instead.")
-#             self.density_mlp = nn.Sequential(
-#                 nn.Linear(self.pos_encoder.out_dim, density_n_neurons, bias=False),
-#                 nn.ReLU(),
-#                 nn.Linear(density_n_neurons, 16, bias=False))
-#             self.rgb_mlp = nn.Sequential(nn.Linear(self.dir_encoder.out_dim+16, rgb_n_neurons, bias=False),
-#                             nn.ReLU(),
-#                             nn.Linear(rgb_n_neurons, rgb_n_neurons, bias=False),
-#                             nn.ReLU(),
-#                             nn.Linear(rgb_n_neurons, 3, bias=False))
-#         self.set_fp16()
-#
-#     def execute(self, pos_input, dir_input, time):
-#         if self.using_fp16:
-#             with jt.flag_scope(auto_mixed_precision_level=5):
-#                 return self.execute_(pos_input, dir_input)
-#         else:
-#             return self.execute_(pos_input, dir_input)
-#
-#     def execute_(self, pos_input, dir_input):
-#         dir_input = self.dir_encoder(dir_input)
-#         pos_input = self.pos_encoder(pos_input)
-#         density = self.density_mlp(pos_input)
-#         rgb = jt.concat([density, dir_input], -1)
-#         rgb = self.rgb_mlp(rgb)
-#         outputs = jt.concat([rgb, density[..., :1]], -1)  # batchsize 4: rgbd
-#         return outputs
-#
-#     def density(self, pos_input):  # batchsize,3
-#         density = self.pos_encoder(pos_input)
-#         density = self.density_mlp(density)[:,:1]
-#         return density
-#
-#     def set_fp16(self):
-#         if self.using_fp16:
-#             self.density_mlp.float16()
-#             self.rgb_mlp.float16()
-#             self.pos_encoder.float16()
-#             self.dir_encoder.float16()
+@NETWORKS.register_module()
+class NGPNetworks(nn.Module):
+    def __init__(self, use_fully=True, density_hidden_layer=1, density_n_neurons=64, rgb_hidden_layer=2, rgb_n_neurons=64):
+        super(NGPNetworks, self).__init__()
+        self.use_fully = use_fully
+        self.cfg = get_cfg()
+        self.using_fp16 = self.cfg.fp16
+        self.pos_encoder = build_from_cfg(self.cfg.encoder.pos_encoder, ENCODERS)
+        self.dir_encoder = build_from_cfg(self.cfg.encoder.dir_encoder, ENCODERS)
+
+        if self.use_fully and jt.flags.cuda_archs[0] >= 75 and self.using_fp16:
+            assert self.pos_encoder.out_dim%16==0
+            assert self.dir_encoder.out_dim%16==0
+            self.density_mlp = FMLP([self.pos_encoder.out_dim, density_n_neurons, 16])
+            self.rgb_mlp = FMLP([self.dir_encoder.out_dim+16, rgb_n_neurons, rgb_n_neurons, 3])
+        else:
+            if self.use_fully and not (jt.flags.cuda_archs[0] >= 75):
+                print("Warning: Sm arch is lower than sm_75, FFMLPs is not supported. Automatically use original MLPs instead.")
+            elif self.use_fully and not self.using_fp16:
+                print("Warning: FFMLPs only support float16. Automatically use original MLPs instead.")
+            self.density_mlp = nn.Sequential(
+                nn.Linear(self.pos_encoder.out_dim, density_n_neurons, bias=False),
+                nn.ReLU(),
+                nn.Linear(density_n_neurons, 16, bias=False))
+            self.rgb_mlp = nn.Sequential(nn.Linear(self.dir_encoder.out_dim+16, rgb_n_neurons, bias=False),
+                            nn.ReLU(),
+                            nn.Linear(rgb_n_neurons, rgb_n_neurons, bias=False),
+                            nn.ReLU(),
+                            nn.Linear(rgb_n_neurons, 3, bias=False))
+        self.set_fp16()
+
+    def execute(self, pos_input, dir_input, time):
+        if self.using_fp16:
+            with jt.flag_scope(auto_mixed_precision_level=5):
+                return self.execute_(pos_input, dir_input)
+        else:
+            return self.execute_(pos_input, dir_input)
+
+    def execute_(self, pos_input, dir_input):
+        dir_input = self.dir_encoder(dir_input)
+        pos_input = self.pos_encoder(pos_input)
+        density = self.density_mlp(pos_input)
+        rgb = jt.concat([density, dir_input], -1)
+        rgb = self.rgb_mlp(rgb)
+        outputs = jt.concat([rgb, density[..., :1]], -1)  # batchsize 4: rgbd
+        return outputs
+
+    def density(self, pos_input):  # batchsize,3
+        density = self.pos_encoder(pos_input)
+        density = self.density_mlp(density)[:,:1]
+        return density
+
+    def set_fp16(self):
+        if self.using_fp16:
+            self.density_mlp.float16()
+            self.rgb_mlp.float16()
+            self.pos_encoder.float16()
+            self.dir_encoder.float16()

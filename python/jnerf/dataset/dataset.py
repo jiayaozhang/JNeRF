@@ -98,7 +98,7 @@ class NerfDataset():
             self.offset=offset
         self.resolution=[0,0]# W*H
         self.times = []
-        self.transforms_gpu=[]
+        self.transforms_gpu=[] ## print(transforms...
         self.metadata=[]
         self.image_data=[]
         self.focal_lengths=[]
@@ -112,7 +112,6 @@ class NerfDataset():
         self.idx_now=0
         self.load_data(root_dir)
         jt.gc()
-
         self.image_data = self.image_data.reshape(
             self.n_images, -1, 4).detach()
 
@@ -121,6 +120,7 @@ class NerfDataset():
             self.shuffle_index = jt.randperm(self.H * self.W).detach()
             self.idx_now = 0
             pixel_index = self.shuffle_index[self.idx_now:self.idx_now + self.batch_size]
+            ## Pirnt generate_random_data_in_im
             img_ids, rays_o, rays_d, rgb_target, time = self.generate_random_data_in_img(img_id, pixel_index, self.batch_size)
             self.idx_now += self.batch_size
             yield img_ids, rays_o, rays_d, rgb_target, time
@@ -192,7 +192,7 @@ class NerfDataset():
 
             # time = frame['time']
             time = 0
-            print(time)
+            # print(time)
             # time = jt.ones(0)
             self.times.append(time)
 
@@ -280,10 +280,11 @@ class NerfDataset():
         img_id = jt.array([img_id]).repeat(bs)
         time = self.times[img_id]
         xforms = self.transforms_gpu[img_id]
+        print("img_id",img_id[0])
         principal_point = self.metadata[:, 4:6][img_id]
-        # print("xforms",xforms.shape)
+        print("xforms",xforms[0])
         xforms=xforms.permute(0,2,1)
-        # print("xforms2",xforms.shape)
+        #print("xforms2",xforms.)
         rays_o = xforms[...,  3]
         res = self.resolution_gpu
         x=((img_offset%self.W)+0.5)/self.W

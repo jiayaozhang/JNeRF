@@ -28,7 +28,7 @@ class GridEncode(Function):
             params_in_level = int(resolution)**int(n_pos_dims)
             params_in_level = self.div_round_up(params_in_level, 8, int)*8
             params_in_level = min(
-                params_in_level, (1 << log2_hashmap_size))
+                params_in_level, (1 << log2_hashmap_size)) #TODO: (1<<log2) -> hashmap_size
             offsets_table_host[i] = offset
             offset += params_in_level
         offsets_table_host[m_n_levels] = offset

@@ -10,6 +10,22 @@ JNeRF is an NeRF benchmark based on [Jittor](https://github.com/Jittor/jittor). 
 
 <img src="docs/demo_5s.gif" width="300"/>
 
+## Install
+JNeRF environment requirements:
+
+* System: **Linux**(e.g. Ubuntu/CentOS/Arch), **macOS**, or **Windows Subsystem of Linux (WSL)**
+* Python version >= 3.7
+* CPU compiler (require at least one of the following)
+    * g++ (>=5.4.0)
+    * clang (>=8.0)
+* GPU compiler (optional)
+    * nvcc (>=10.0 for g++ or >=10.2 for clang)
+* GPU library: cudnn-dev (recommend tar file installation, [reference link](https://docs.nvidia.com/deeplearning/cudnn/install-guide/index.html#installlinux-tar))
+* GPU supporting:
+  * sm arch >= sm_61 (GTX 10x0 / TITAN Xp and above)
+  * to use fp16: sm arch >= sm_70 (TITAN V / V100 and above). JNeRF will automatically use original fp32 if the requirements are not meet.
+  * to use FullyFusedMLP: sm arch >= sm_75 (RTX 20x0 and above). JNeRF will automatically use original MLPs if the requirements are not meet.
+
 **Step 1: Install the requirements**
 ```shell
 sudo apt-get install tcl-dev tk-dev python3-tk
@@ -75,144 +91,97 @@ Set the `--task` of the command to `render` to render demo video `demo.mp4` with
 python tools/run_net.py --config-file ./projects/ngp/configs/ngp_base.py --task render
 ```
 
-## Config Files
+## Performance
 
-* Everytime when I encounter some errors I do the following in order, it will always work!
-
-in pycharm, remember to LD_LIBRARY_PATH=0 otherwise it would has errors
-
-1.   unset LD_LIBRARY_PATH
-
-2.   python -m jittor
-
-3.   python -m jittor_utils.install_cuda
+Instant-ngp implemented by JNeRF achieves similar performance and speed to the paper. The performance comparison can be seen in the table below and training speed of JNeRF-NGP on RTX 3090 is about 133 iters/s. 
 
 
-* <img src="docs/config.png" width="2400"/>
- 
+|    Models     |    implementation      | Dataset | PSNR |
+|----|---|---|---|
+| Instant-ngp | paper | lego | 36.39(5min) |
+| Instant-ngp | JNeRF | lego | 36.41(5min) |
+| NeRF        | JNeRF | lego | 32.49 |
 
- ## How to add the deformation module
+## Plan of Models
+
+JNeRF will support more valuable NeRF models in the future, if you are also interested in JNeRF and want to improve it, welcome to submit PR!
+
+<b>:heavy_check_mark:Supported  :clock3:Doing :heavy_plus_sign:TODO</b>
+
+- :heavy_check_mark: Instant-NGP
+- :heavy_check_mark: NeRF
+- :clock3: Mip-NeRF
+- :clock3: PaletteNeRF
+- :clock3: Plenoxels
+- :heavy_plus_sign: StylizedNeRF
+- :heavy_plus_sign: NeRF-Editing
+- :heavy_plus_sign: DrawingInStyles
+- :heavy_plus_sign: NSVF
+- :heavy_plus_sign: NeRFactor
+- :heavy_plus_sign: pixelNeRF
+- :heavy_plus_sign: Recursive-NeRF
+- :heavy_plus_sign: StyleNeRF
+- :heavy_plus_sign: EG3D
+- :heavy_plus_sign: ...
+
+## Contact Us
+
+If you are interested in JNeRF or NeRF research and want to build the JNeRF community with us, contributing is very welcome, please contact us! 
+
+Email: jittor@qq.com
+
+JNeRF QQ Group: 689063884
+
+<img src="docs/jnerf_qrcode.jpg" width="200"/>
+
+If you have any questions about Jittor, you can [file an issue](https://github.com/Jittor/jittor/issues), or join our Jittor QQ Group: 761222083
+
+<img src="docs/jittor_qrcode.jpg" width="200"/>
+
+## Acknowledgements
+
+The original implementation comes from the following cool project:
+* [Instant-NGP](https://github.com/NVlabs/instant-ngp)
+* [tiny-cuda-nn](https://github.com/NVlabs/tiny-cuda-nn)
+* [Eigen](https://github.com/Tom94/eigen) ([homepage](https://eigen.tuxfamily.org/index.php?title=Main_Page))
+
+Their licenses can be seen at `licenses/`, many thanks for their nice work!
 
 
- In NGP_Network, add these modules
+## Citation
+
 
 ```
-        self.dir_encoder = build_from_cfg(self.cfg.encoder.dir_encoder, ENCODERS)
-
-        self.deform_encoder = FrequencyEncoder(input_dims=3, multires=10, log_sampling=True)
-
-        self.time_encoder = FrequencyEncoder(input_dims=1, multires=6, log_sampling=True)
-
-        self.sigma_encoder = HashEncoder(n_pos_dims=3, n_features_per_level=2,
-                                  n_levels=16, base_resolution=16, log2_hashmap_size=19)
-
-        self.dir_encoder = SHEncoder()
+@article{hu2020jittor,
+  title={Jittor: a novel deep learning framework with meta-operators and unified graph execution},
+  author={Hu, Shi-Min and Liang, Dun and Yang, Guo-Ye and Yang, Guo-Wei and Zhou, Wen-Yang},
+  journal={Science China Information Sciences},
+  volume={63},
+  number={222103},
+  pages={1--21},
+  year={2020}
+}
+@article{mueller2022instant,
+    author = {Thomas M\"uller and Alex Evans and Christoph Schied and Alexander Keller},
+    title = {Instant Neural Graphics Primitives with a Multiresolution Hash Encoding},
+    journal = {ACM Trans. Graph.},
+    issue_date = {July 2022},
+    volume = {41},
+    number = {4},
+    month = jul,
+    year = {2022},
+    pages = {102:1--102:15},
+    articleno = {102},
+    numpages = {15},
+    url = {https://doi.org/10.1145/3528223.3530127},
+    doi = {10.1145/3528223.3530127},
+    publisher = {ACM},
+    address = {New York, NY, USA},
+}
+@inproceedings{mildenhall2020nerf,
+  title={NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis},
+  author={Ben Mildenhall and Pratul P. Srinivasan and Matthew Tancik and Jonathan T. Barron and Ravi Ramamoorthi and Ren Ng},
+  year={2020},
+  booktitle={ECCV},
+}
 ```
-
-
-### New features
-
-        ## deform network
-```    
-        self.num_layers_deform = num_layers_deform = 5
-        hidden_dim_deform = 128
-        in_dim_time = 1
-        deform_net = []
-        for l in range(num_layers_deform):
-            if l == 0:
-                in_dim = self.deform_encoder.out_dim + self.time_encoder.out_dim # grid dim + time
-            else:
-                in_dim = hidden_dim_deform
-            
-            if l == num_layers_deform - 1:
-                out_dim = 3 # deformation for xyz
-            else:
-                out_dim = hidden_dim_deform
-            
-            deform_net.append(nn.Linear(in_dim, out_dim, bias=False))
-
-        self.deform_net = nn.ModuleList(deform_net)        
-```
-
-        ## sigma network
-```
-        self.num_layers = num_layers = 2
-        self.hidden_dim = hidden_dim = 64
-        self.geo_feat_dim = geo_feat_dim = 15
-
-        sigma_net = []
-        for l in range(num_layers):
-            if l == 0:
-                in_dim = self.sigma_encoder.out_dim + self.time_encoder.out_dim + self.deform_encoder.out_dim  # concat everything
-            else:
-                in_dim = hidden_dim
-
-            if l == num_layers - 1:
-                out_dim = 1 + self.geo_feat_dim  # 1 sigma + features for color
-            else:
-                out_dim = hidden_dim
-
-            sigma_net.append(nn.Linear(in_dim, out_dim, bias=False))
-
-        self.sigma_net = nn.ModuleList(sigma_net)
-```
-
-
-        #color network
-```        
-        self.num_layers_color = num_layers_color = 3
-        self.hidden_dim_color = hidden_dim_color = 64
-
-        color_net = []
-        for l in range(num_layers_color):
-            if l == 0:
-                in_dim = self.dir_encoder.out_dim + self.geo_feat_dim
-            else:
-                in_dim = hidden_dim
-
-            if l == num_layers_color - 1:
-                out_dim = 3  # 3 rgb
-            else:
-                out_dim = hidden_dim
-
-            color_net.append(nn.Linear(in_dim, out_dim, bias=False))
-
-        self.color_net = nn.ModuleList(color_net)
-```
-
-        #background network
-```       
-        num_layers_bg = 2
-        hidden_dim_bg = 64
-        if self.bg_radius > 0:
-            self.num_layers_bg = num_layers_bg
-            self.hidden_dim_bg = hidden_dim_bg
-
-            bg_net = []
-            for l in range(num_layers_bg):
-                if l == 0:
-                    in_dim = self.encoder_bg.output_mask + self.dir_encoder.out_dim
-                else:
-                    in_dim = hidden_dim_bg
-
-                if l == num_layers_bg - 1:
-                    out_dim = 3  # 3 rgb
-                else:
-                    out_dim = hidden_dim_bg
-
-                bg_net.append(nn.Linear(in_dim, out_dim, bias=False))
-
-            self.bg_net = nn.ModuleList(bg_net)
-        else:
-            self.bg_net = None
-```
-
-##Reference
-
-* I try to move the Dnerf from torch_ngp to Jnerf
-
-Which I would use for future use in the simualtion domain
-
-## Reference
-
-* https://github.com/ashawkey/torch-ngp

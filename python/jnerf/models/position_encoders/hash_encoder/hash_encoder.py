@@ -7,6 +7,7 @@ from .grid_encode import GridEncode
 @ENCODERS.register_module()
 class HashEncoder(nn.Module):
     def __init__(self, n_pos_dims=3, n_features_per_level=2, n_levels=16, base_resolution=16, log2_hashmap_size=19):
+        # TODO:n_features_per_level=? n_levels=1 base_resolution=800? log2_hashmap_size=?(hashmap_size=800*800*800)
         self.cfg = get_cfg()
         using_fp16 = self.cfg.fp16
         aabb_scale = self.cfg.dataset_obj.aabb_scale
@@ -14,6 +15,15 @@ class HashEncoder(nn.Module):
         self.hash_func_header = f"""
 #define get_index(p0,p1,p2) {self.hash_func}
         """
+        # int a[100,200,300];
+        # a[x][y][z]
+        # a[x*200*300+y*300+z]
+        #
+        # grid[res,res,res]
+        # p0,p1,p2
+        # TODO: grid[p0*res*res + p1*res + p2]
+
+
         self.encoder = GridEncode(self.hash_func_header, aabb_scale=aabb_scale, n_pos_dims=3, n_features_per_level=2,
                                   n_levels=16, base_resolution=16, log2_hashmap_size=19, using_fp16=using_fp16)
         self.grad_type = 'float32'
